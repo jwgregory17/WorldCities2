@@ -10,6 +10,8 @@ import { HomeComponent } from './home/home.component';
 import { CounterComponent } from './counter/counter.component';
 import { FetchDataComponent } from './fetch-data/fetch-data.component';
 import { HealthCheckComponent } from './health-check/health-check.component';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { CitiesComponent } from './cities/cities.component';
 
 @NgModule({
   declarations: [
@@ -18,7 +20,8 @@ import { HealthCheckComponent } from './health-check/health-check.component';
     HomeComponent,
     CounterComponent,
     FetchDataComponent,
-    HealthCheckComponent
+    HealthCheckComponent,
+    CitiesComponent
   ],
   imports: [
     BrowserModule.withServerTransition({ appId: 'ng-cli-universal' }),
@@ -28,8 +31,10 @@ import { HealthCheckComponent } from './health-check/health-check.component';
       { path: '', component: HomeComponent, pathMatch: 'full' },
       { path: 'counter', component: CounterComponent },
       { path: 'fetch-data', component: FetchDataComponent },
-      { path: 'health-check', component: HealthCheckComponent }
-    ])
+      { path: 'health-check', component: HealthCheckComponent },
+      { path: 'cities', component: CitiesComponent }
+    ]),
+    BrowserAnimationsModule
   ],
   providers: [],
   bootstrap: [AppComponent]
