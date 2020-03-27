@@ -2,23 +2,39 @@
 
 <p>Here's a list of cities: feel free to play with it.</p>
 
-<p *ngIf="!cities"><em>Loading Cities...</em></p>
+<p *ngIf="!cities"><em>Loading Cities (all cities takes 5-7 sec)...</em></p>
 
-<table class='table table-striped' aria-labelledby="tableLabel" [hidden]="!cities">
-  <thead>
-  <tr>
-    <th>ID</th>
-    <th>Name</th>
-    <th>Lat</th>
-    <th>Lon</th>
-  </tr>
-  </thead>
-  <tbody>
-  <tr *ngFor="let city of cities">
-    <td>{{ city.id }}</td>
-    <td>{{ city.name }}</td>
-    <td>{{ city.lat }}</td>
-    <td>{{ city.lon }}</td>
-  </tr>
-  </tbody>
+<!-- Angular Material Table -->
+<!-- The matColumnDef directive identifies a given column with a unique key. -->
+<!-- The matHeaderCellDef directive defines how to display the header for each column. -->
+<!-- The matCellDef directive defines how to display the data cells for each column. -->
+<!-- The matHeaderRowDef directive identifies a configuration element for the table header row and the display order of the header columns. -->
+<table mat-table [dataSource]="cities" class="mat-elevation-z8"
+       [hidden]="!cities">
+  <!-- Id Column -->
+  <ng-container matColumnDef="id">
+    <th mat-header-cell *matHeaderCellDef>ID</th>
+    <td mat-cell *matCellDef="let city">{{city.id}}</td>
+  </ng-container>
+
+  <!-- Name Column -->
+  <ng-container matColumnDef="name">
+    <th mat-header-cell *matHeaderCellDef>Name</th>
+    <td mat-cell *matCellDef="let city">{{city.name}}</td>
+  </ng-container>
+
+  <!-- Lat Column -->
+  <ng-container matColumnDef="lat">
+    <th mat-header-cell *matHeaderCellDef>Latitude</th>
+    <td mat-cell *matCellDef="let city">{{city.lat}}</td>
+  </ng-container>
+
+  <!-- Lon Column -->
+  <ng-container matColumnDef="lon">
+    <th mat-header-cell *matHeaderCellDef>Longitude</th>
+    <td mat-cell *matCellDef="let city">{{city.lon}}</td>
+  </ng-container>
+
+  <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+  <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
 </table>
