@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using System.Linq.Dynamic.Core;
+using System.Reflection;
 
 namespace WorldCities2.Data
 {
@@ -15,18 +17,22 @@ namespace WorldCities2.Data
             List<T> data,
             int count,
             int pageIndex,
-            int pageSize)
+            int pageSize,
+            string sortColumn,
+            string sortOrder)
         {
             Data = data;
             PageIndex = pageIndex;
             PageSize = pageSize;
             TotalCount = count;
             TotalPages = (int)Math.Ceiling(count / (double)pageSize);
+            SortColumn = sortColumn;
+            SortOrder = sortOrder;
         }
 
         #region Methods
         /// <summary>
-        /// Pages a IQueryable source.
+        /// Pages and/or sorts a IQueryable source.
         /// </summary>
         /// <param name="source">An IQueryable source of generic 
         /// type</param>
@@ -34,17 +40,37 @@ namespace WorldCities2.Data
         /// (0 = first page)</param>
         /// <param name="pageSize">The actual size of each 
         /// page</param>
+        /// <param name="sortColumn">The sorting column name</param>
+        /// <param name="sortOrder">The sorting order ("ASC" or 
+        /// "DESC")</param>
         /// <returns>
-        /// A object containing the paged result 
-        /// and all the relevant paging navigation info.
+        /// A object containing the IQueryable paged/sorted result 
+        /// and all the relevant paging/sorting navigation info.
         /// </returns>
         public static async Task<ApiResult<T>> CreateAsync(
             IQueryable<T> source,
             int pageIndex,
-            int pageSize)
+            int pageSize,
+            string sortColumn = null,
+            string sortOrder = null)
         {
             var count = await source.CountAsync();
-            
+
+            if (!String.IsNullOrEmpty(sortColumn)
+                && IsValidProperty(sortColumn))
+            {
+                sortOrder = !String.IsNullOrEmpty(sortOrder)
+                            && sortOrder.ToUpper() == "ASC"
+                    ? "ASC"
+                    : "DESC";
+                source = source.OrderBy(
+                    String.Format(
+                        "{0} {1}",
+                        sortColumn,
+                        sortOrder)
+                );
+            }
+
             var data = await source
                 .Skip(pageIndex * pageSize)
                 .Take(pageSize)
@@ -54,7 +80,33 @@ namespace WorldCities2.Data
                 data,
                 count,
                 pageIndex,
-                pageSize);
+                pageSize,
+                sortColumn,
+                sortOrder);
+        }
+        #endregion
+
+        #region Methods
+        /// <summary>
+        /// Checks if the given property name exists
+        /// to protect against SQL injection attacks
+        /// </summary>
+        public static bool IsValidProperty(
+            string propertyName,
+            bool throwExceptionIfNotFound = true)
+        {
+            var prop = typeof(T).GetProperty(
+                propertyName,
+                BindingFlags.IgnoreCase |
+                BindingFlags.Public |
+                BindingFlags.Instance);
+            if (prop == null && throwExceptionIfNotFound)
+                throw new NotSupportedException(
+                    String.Format(
+                        "ERROR: Property '{0}' does not exist.",
+                        propertyName)
+                );
+            return prop != null;
         }
         #endregion
 
@@ -75,6 +127,12 @@ namespace WorldCities2.Data
 
         // Total pages count
         public int TotalPages { get; private set; }
+
+        // Sorting Column name (or null if none set)
+        public string SortColumn { get; set; }
+
+        // Sorting Order ("ASC", "DESC" or null if none set)
+        public string SortOrder { get; set; }
 
         // TRUE if the current page has a previous page, 
         // FALSE otherwise.
