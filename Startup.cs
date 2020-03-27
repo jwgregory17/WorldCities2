@@ -3,8 +3,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.SpaServices.AngularCli;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using WorldCities2.Data;
 
 namespace WorldCities2
 {
@@ -26,6 +28,30 @@ namespace WorldCities2
             {
                 configuration.RootPath = "ClientApp/dist";
             });
+
+            services.AddHealthChecks();
+
+            services.AddHealthChecks()
+                .AddCheck("Ryadel [from tutorial]", new ICMPHealthCheck("www.ryadel.com",
+                    100))
+                .AddCheck("Google [from tutorial]", new ICMPHealthCheck("www.google.com",
+                    100))
+                .AddCheck("Does not exist [from tutorial]", new ICMPHealthCheck("www.does-not-exist.com",
+                    100))
+                .AddCheck("BMC Home", new ICMPHealthCheck("home.BuildWithBmc.com",
+                    100));
+
+            // Add EntityFramework support for SqlServer
+            // Add ApplicationDbContext
+            // use connection string from appsettings.json
+            services
+                .AddEntityFrameworkSqlServer()
+                .AddDbContext<ApplicationDbContext>(options =>
+                    options.UseSqlServer(
+                        Configuration.GetConnectionString("DefaultConnection")
+                    )
+                );
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -43,13 +69,29 @@ namespace WorldCities2
             }
 
             app.UseHttpsRedirection();
-            app.UseStaticFiles();
+
+            app.UseStaticFiles(new StaticFileOptions()
+            {
+                OnPrepareResponse = (context) =>
+                {
+                    // Retrieve cache configuration from appsettings.json
+                    context.Context.Response.Headers["Cache-Control"] =
+                        Configuration["StaticFiles:Headers:Cache-Control"];
+                    context.Context.Response.Headers["Pragma"] =
+                        Configuration["StaticFiles:Headers:Pragma"];
+                    context.Context.Response.Headers["Expires"] =
+                        Configuration["StaticFiles:Headers:Expires"];
+                }
+            });
+
             if (!env.IsDevelopment())
             {
                 app.UseSpaStaticFiles();
             }
 
             app.UseRouting();
+
+            app.UseHealthChecks("/hc", new CustomHealthCheckOptions());
 
             app.UseEndpoints(endpoints =>
             {
