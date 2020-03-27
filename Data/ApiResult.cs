@@ -19,7 +19,9 @@ namespace WorldCities2.Data
             int pageIndex,
             int pageSize,
             string sortColumn,
-            string sortOrder)
+            string sortOrder,
+            string filterColumn,
+            string filterQuery)
         {
             Data = data;
             PageIndex = pageIndex;
@@ -28,39 +30,58 @@ namespace WorldCities2.Data
             TotalPages = (int)Math.Ceiling(count / (double)pageSize);
             SortColumn = sortColumn;
             SortOrder = sortOrder;
+            FilterColumn = filterColumn;
+            FilterQuery = filterQuery;
         }
 
         #region Methods
         /// <summary>
-        /// Pages and/or sorts a IQueryable source.
+        /// Pages, sorts and/or filters a IQueryable source.
         /// </summary>
         /// <param name="source">An IQueryable source of generic 
         /// type</param>
         /// <param name="pageIndex">Zero-based current page index 
         /// (0 = first page)</param>
-        /// <param name="pageSize">The actual size of each 
-        /// page</param>
-        /// <param name="sortColumn">The sorting column name</param>
+        /// <param name="pageSize">The actual size of 
+        /// each page</param>
+        /// <param name="sortColumn">The sorting colum name</param>
         /// <param name="sortOrder">The sorting order ("ASC" or 
         /// "DESC")</param>
+        /// <param name="filterColumn">The filtering column name</param>
+        /// <param name="filterQuery">The filtering query (value to
+        /// lookup)</param>
         /// <returns>
-        /// A object containing the IQueryable paged/sorted result 
-        /// and all the relevant paging/sorting navigation info.
+        /// A object containing the IQueryable paged/sorted/filtered
+        /// result 
+        /// and all the relevant paging/sorting/filtering navigation
+        /// info.
         /// </returns>
         public static async Task<ApiResult<T>> CreateAsync(
             IQueryable<T> source,
             int pageIndex,
             int pageSize,
             string sortColumn = null,
-            string sortOrder = null)
+            string sortOrder = null,
+            string filterColumn = null,
+            string filterQuery = null)
         {
+            if (!String.IsNullOrEmpty(filterColumn)
+                && !String.IsNullOrEmpty(filterQuery)
+                && IsValidProperty(filterColumn))
+            {
+                source = source.Where(
+                    String.Format("{0}.Contains(@0)",
+                    filterColumn),
+                    filterQuery);
+            }
+
             var count = await source.CountAsync();
 
             if (!String.IsNullOrEmpty(sortColumn)
                 && IsValidProperty(sortColumn))
             {
                 sortOrder = !String.IsNullOrEmpty(sortOrder)
-                            && sortOrder.ToUpper() == "ASC"
+                    && sortOrder.ToUpper() == "ASC"
                     ? "ASC"
                     : "DESC";
                 source = source.OrderBy(
@@ -68,7 +89,7 @@ namespace WorldCities2.Data
                         "{0} {1}",
                         sortColumn,
                         sortOrder)
-                );
+                    );
             }
 
             var data = await source
@@ -82,7 +103,9 @@ namespace WorldCities2.Data
                 pageIndex,
                 pageSize,
                 sortColumn,
-                sortOrder);
+                sortOrder,
+                filterColumn,
+                filterQuery);
         }
         #endregion
 
@@ -133,6 +156,13 @@ namespace WorldCities2.Data
 
         // Sorting Order ("ASC", "DESC" or null if none set)
         public string SortOrder { get; set; }
+
+        // Filter Column name (or null if none set)
+        public string FilterColumn { get; set; }
+
+        // Filter Query string 
+        // (to be used within the given FilterColumn)
+        public string FilterQuery { get; set; }
 
         // TRUE if the current page has a previous page, 
         // FALSE otherwise.

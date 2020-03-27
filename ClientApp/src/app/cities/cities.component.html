@@ -2,7 +2,12 @@
 
 <p>Here's a list of cities: feel free to play with it.</p>
 
-<p *ngIf="!cities"><em>Loading Cities (all cities takes 5-7 sec)...</em></p>
+<p *ngIf="!cities"><em>Loading Cities...</em></p>
+
+<mat-form-field [hidden]="!cities">
+  <input matInput (keyup)="loadData($event.target.value)"
+         placeholder="Filter by name (or part of it)...">
+</mat-form-field>
 
 <!-- Angular Material Table -->
 <!-- The matColumnDef directive identifies a given column with a unique key. -->
